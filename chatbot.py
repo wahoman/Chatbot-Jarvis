@@ -2,8 +2,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 import openai
+import requests  # 추가
 
-# MySQL 연결 설정
+# MySQL 및 OpenAI API 설정
 db = mysql.connector.connect(
     host="192.168.0.31",
     user="root",
@@ -11,49 +12,51 @@ db = mysql.connector.connect(
     database="wahoman",
     port=3306
 )
+openai.api_key = ""
 
 app = FastAPI()
-
-# OpenAI API 설정
-openai.api_key = ""
 
 class ChatRequest(BaseModel):
     user_id: str
     message: str
 
+def create_chat_completion(prompt):
+    url = "https://api.openai.com/v1/chat/completions"  # OpenAI 챗 API URL
+    headers = {
+        "Authorization": f"Bearer {openai.api_key}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "model": "gpt-4-1106-preview",  # 사용할 모델 지정
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
+
 @app.post("/chat/")
 async def chat(request: ChatRequest):
     cursor = db.cursor(dictionary=True)
-    
-    # 이전 대화 맥락 가져오기
-    cursor.execute("SELECT context FROM conversations WHERE user_id = %s", (request.user_id,))
-    record = cursor.fetchone()
-    context = record['context'] if record else ""
-    
-    # OpenAI를 이용한 대화 생성
-    prompt = f"{context}\nUser: {request.message}\nAI:"
-    response = openai.ChatCompletion.create(
-      model="gpt-3.5-turbo",  # 사용 모델명 업데이트
-      messages=[
-          {"role": "system", "content": "You are a helpful assistant."},
-          {"role": "user", "content": request.message}
-      ]
-    )
-    message_response = response.choices[0].message['content'] if response.choices else "죄송합니다, 대답을 찾을 수 없습니다."
-    
-    # 새 대화 맥락 저장
-    new_context = context + "\nUser: " + request.message + "\nAI: " + message_response
-    if record:
-        cursor.execute("UPDATE conversations SET context = %s WHERE user_id = %s", (new_context, request.user_id))
-    else:
-        cursor.execute("INSERT INTO conversations (user_id, context) VALUES (%s, %s)", (request.user_id, new_context))
-    
-    db.commit()
-    cursor.close()
-    
-    return {"response": message_response}
+    cursor.execute("SELECT user_message, bot_response FROM conversations WHERE user_id = %s ORDER BY id", (request.user_id,))
+    records = cursor.fetchall()
 
-# 서버 실행
+    # 전체 대화 맥락 구축
+    context = "\n".join([f"User: {record['user_message']}\nAI: {record['bot_response']}" for record in records])
+
+    # 대화 스타일 명시 및 프롬프트 생성
+    prompt_style = "챗봇은 친절하고 자연스러운 대화를 지향합니다."
+    prompt = f"{context}\n{prompt_style}\nUser: {request.message}\nAI:"
+
+    # OpenAI 챗 API를 이용한 대화 생성
+    response = create_chat_completion(prompt)
+    message_response = response.get("choices", [{}])[0].get("message", {}).get('content') if response.get("choices") else None
+
+    if message_response:
+        cursor.execute("INSERT INTO conversations (user_id, user_message, bot_response) VALUES (%s, %s, %s)", (request.user_id, request.message, message_response))
+        db.commit()
+
+    cursor.close()
+    return {"response": message_response or "죄송합니다, 대답을 찾을 수 없습니다."}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8401)
