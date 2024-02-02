@@ -6,11 +6,11 @@ import requests  # 추가
 
 # MySQL 및 OpenAI API 설정
 db = mysql.connector.connect(
-    host="192.168.0.31",
-    user="root",
-    password="dugudrn12!",
-    database="wahoman",
-    port=3306
+    host="",
+    user="",
+    password="",
+    database="",
+    port=
 )
 openai.api_key = ""
 
@@ -59,4 +59,4 @@ async def chat(request: ChatRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8401)
+    uvicorn.run(app, host="", port=)
