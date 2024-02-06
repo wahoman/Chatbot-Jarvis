@@ -11,20 +11,14 @@ load_dotenv()
 
 # MySQL 및 OpenAI API 설정
 db = mysql.connector.connect(
-<<<<<<< HEAD
     host=os.getenv("DB_HOST"),
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
     database=os.getenv("DB_NAME"),
     port=int(os.getenv('DB_PORT', 3306))
-=======
-    host="",
-    user="",
-    password="",
-    database="",
-    port=
->>>>>>> 892aa067dd54f811dd1cf22b192eb2eb35c61529
 )
+
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
