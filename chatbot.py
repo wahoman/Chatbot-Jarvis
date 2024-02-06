@@ -5,6 +5,7 @@ import openai
 import requests
 from dotenv import load_dotenv  # 추가
 import os  # 추가
+import uvicorn
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -64,6 +65,11 @@ async def chat(request: ChatRequest):
     cursor.close()
     return {"response": message_response or "죄송합니다, 대답을 찾을 수 없습니다."}
 
+
+host = os.getenv('HOST', '127.0.0.1')  # 기본값을 제공할 수 있습니다.
+port = int(os.getenv('PORT', 8000))    # 기본값을 제공할 수 있습니다.
+
+# FastAPI 앱 정의 및 기타 설정 ...
+
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="", port=)
+    uvicorn.run(app, host=host, port=port)
