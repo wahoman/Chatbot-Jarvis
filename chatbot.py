@@ -2,17 +2,22 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 import openai
-import requests  # 추가
+import requests
+from dotenv import load_dotenv  # 추가
+import os  # 추가
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
 # MySQL 및 OpenAI API 설정
 db = mysql.connector.connect(
-    host="192.168.0.31",
-    user="root",
-    password="dugudrn12!",
-    database="wahoman",
-    port=3306
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAME"),
+    port=int(os.getenv('DB_PORT', 3306))
 )
-openai.api_key = ""
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
 
