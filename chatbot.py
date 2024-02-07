@@ -19,7 +19,7 @@ db = mysql.connector.connect(
     port=int(os.getenv('DB_PORT', 3306))
 )
 
-
+##
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
